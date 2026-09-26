@@ -1,0 +1,6 @@
+{
+  "name": "SplitWave - Audio & Video Precision Splitter",
+  "description": "100% browser-side audio and video precision splitter. Choose split interval in seconds, attach custom images or snap video frames to each segment, and download individual pieces or all in a ZIP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
