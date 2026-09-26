@@ -14,16 +14,13 @@ import { ClientMediaFile, SplitConfig, SplitPiece, AttachedImage } from './types
 import {
   decodeAudioFile,
   sliceAudioBuffer,
-  generateBrowserAudioSample,
   getAudioContext,
 } from './utils/browserAudioSplitter.ts';
-import { generateBrowserVideoSample } from './utils/browserVideoSplitter.ts';
 import { Scissors, Film } from 'lucide-react';
 
 export default function App() {
   const [currentFile, setCurrentFile] = useState<ClientMediaFile | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
-  const [isLoadingSample, setIsLoadingSample] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Playback state
@@ -152,73 +149,6 @@ export default function App() {
     }
   };
 
-  // Handle In-Browser Sample Loading (Zero network requests)
-  const handleLoadSample = async (type: 'audio' | 'video') => {
-    try {
-      setErrorMessage(null);
-      setIsLoadingSample(true);
-      setSplitPieces([]);
-      setCurrentTime(0);
-      setIsPlaying(false);
-      setActivePieceRange(null);
-      setActivePieceId(null);
-
-      if (type === 'video') {
-        const videoBlob = await generateBrowserVideoSample();
-        const objectUrl = URL.createObjectURL(videoBlob);
-        const audioBuffer = await decodeAudioFile(videoBlob).catch(() => undefined);
-
-        const clientMedia: ClientMediaFile = {
-          id: `sample_vid_${Date.now()}`,
-          file: videoBlob,
-          name: 'browser_sample_video.webm',
-          mediaType: 'video',
-          duration: 20,
-          size: videoBlob.size,
-          url: objectUrl,
-          videoDetails: {
-            width: 640,
-            height: 360,
-          },
-          audioDetails: audioBuffer
-            ? {
-                sampleRate: audioBuffer.sampleRate,
-                channels: audioBuffer.numberOfChannels,
-                audioBuffer,
-              }
-            : undefined,
-        };
-
-        setCurrentFile(clientMedia);
-        setConfig((prev) => ({ ...prev, intervalSeconds: 5 }));
-      } else {
-        const { blob, audioBuffer } = await generateBrowserAudioSample();
-        const objectUrl = URL.createObjectURL(blob);
-
-        const clientMedia: ClientMediaFile = {
-          id: `sample_aud_${Date.now()}`,
-          file: blob,
-          name: 'browser_sample_audio.wav',
-          mediaType: 'audio',
-          duration: audioBuffer.duration,
-          size: blob.size,
-          url: objectUrl,
-          audioDetails: {
-            sampleRate: audioBuffer.sampleRate,
-            channels: audioBuffer.numberOfChannels,
-            audioBuffer,
-          },
-        };
-
-        setCurrentFile(clientMedia);
-        setConfig((prev) => ({ ...prev, intervalSeconds: 10 }));
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Error generating browser sample');
-    } finally {
-      setIsLoadingSample(false);
-    }
-  };
 
   const autoConfigureInterval = (dur: number) => {
     if (dur <= 30) {
@@ -528,17 +458,13 @@ export default function App() {
       <Header
         currentFile={currentFile}
         onReset={handleReset}
-        onLoadSample={handleLoadSample}
-        isLoadingSample={isLoadingSample}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
         {!currentFile ? (
           <UploadDropzone
             onFileSelected={handleFileSelected}
-            onLoadSample={handleLoadSample}
             isLoadingFile={isLoadingFile}
-            isLoadingSample={isLoadingSample}
             errorMessage={errorMessage}
           />
         ) : (
